@@ -1,6 +1,5 @@
-# app.py - Final Chatbot for Outsource Development Studio Inc.
 import streamlit as st
-import google.generativeai as genai  # <-- CHANGED: Gemini library
+from openai import OpenAI
 import requests
 from bs4 import BeautifulSoup
 import re
@@ -8,7 +7,6 @@ import re
 # ==========================================
 # 1. CLIENT CONFIGURATION (Day 1-4 Concepts)
 # ==========================================
-# We hardcode the client's core identity here so the bot never forgets who it works for.
 CLIENT_NAME = "Outsource Development Studio Inc."
 CLIENT_LOCATION = "Roseau, Dominica"
 CLIENT_EMAIL = "admin@outsourcejobsda.com"
@@ -20,9 +18,9 @@ CLIENT_WEBSITE = "https://outsourcedevelopment.org"
 def get_website_context(url):
     """
     BACKEND EXPLANATION: This function acts as the bot's 'research assistant'. 
-    Instead of the AI guessing what the client does, we use 'requests' to download 
-    the client's website, and 'BeautifulSoup' to strip away the HTML code, leaving 
-    only the readable text. We feed this text to the AI so it has up-to-date facts.
+    We use 'requests' to download the client's website, and 'BeautifulSoup' to 
+    strip away the HTML code, leaving only the readable text. We feed this text 
+    to the AI so it has up-to-date facts about services and UWI partnerships.
     """
     try:
         response = requests.get(url, timeout=5)
@@ -30,8 +28,8 @@ def get_website_context(url):
         # Extract text and limit to 2500 characters to save AI memory (tokens)
         text = soup.get_text(separator=' ', strip=True)
         return text[:2500] 
-    except Exception as e:
-        return "Unable to load website context at this moment."
+    except Exception:
+        return "Standard Outsource Development Studio services: BPO, recruitment, corporate training, and logistics."
 
 # ==========================================
 # 3. PRIVACY & SECURITY GUARDRAILS (Day 9/11 Concepts)
@@ -43,9 +41,9 @@ def redact_pii(text):
     using Regular Expressions (regex) to find emails and phone numbers and replacing 
     them with [REDACTED] BEFORE the message is sent to the AI.
     """
-    # Regex patterns for emails and phone numbers
     text = re.sub(r'\b[\w\.-]+@[\w\.-]+\.\w+\b', '[REDACTED:EMAIL]', text)
     text = re.sub(r'\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b', '[REDACTED:PHONE]', text)
+    text = re.sub(r'\b\d{9}\b', '[REDACTED:NIN]', text) # 9-digit National Insurance
     return text
 
 def check_authority(user_message):
@@ -54,67 +52,48 @@ def check_authority(user_message):
     the bot must NEVER quote pricing, contract terms, or handle sensitive candidate data. 
     If the user asks for these, we block the AI and escalate to a human.
     """
-    triggers = ["price", "cost", "fee", "salary", "contract terms", "my personal file", "my cv"]
+    triggers = ["price", "cost", "fee", "salary", "contract terms", "my personal file", "my cv", "my application status", "am i eligible"]
     if any(word in user_message.lower() for word in triggers):
         return False # Trigger human escalation
     return True
-# ... [KEEP YOUR CLIENT CONFIG, WEBSITE SCRAPER, AND PII/AUTHORITY GUARDRAILS EXACTLY AS THEY ARE] ...
 
 # ==========================================
-# UPDATED: PROMPT ENGINEERING & GEMINI API CALL
+# 4. PROMPT ENGINEERING & AI CALL (Day 7/8 Concepts - TCRDEI)
 # ==========================================
 def generate_response(messages, web_context):
     """
     BACKEND EXPLANATION: This is the 'Brain'. We use the TCRDEI method to build a 
-    System Prompt. We inject the client's mission and website data. Then, we format 
-    the chat history to match Google Gemini's specific requirements and send it.
+    System Prompt. We inject the client's mission, the scraped website data, and 
+    strict guardrails. Then we send the whole chat history to OpenAI's API.
     """
-    # TCRDEI System Prompt Construction
     system_prompt = f"""
-    [TASK] You are the official AI Assistant for Outsource Development Studio Inc., a people-centered consultancy in Roseau, Dominica.
+    [TASK] You are the official AI Assistant for {CLIENT_NAME}, a people-centered consultancy in {CLIENT_LOCATION}.
     [CONTEXT] You help private/public sectors, small businesses, and entrepreneurs with BPO, recruitment, corporate training (UWI Cave Hill partnership), and logistics. 
     Here is information directly from their website to help you answer accurately:
     ---
     {web_context}
     ---
     [RULES/GUARDRAILS] 
-    1. NEVER quote pricing, fees, or contract terms. If asked, say: "Our team will provide a custom quote. Please email admin@outsourcejobsda.com."
-    2. NEVER ask for or store personal candidate data. 
-    3. Be warm, professional, and helpful. 
+    1. NEVER quote pricing, fees, or contract terms. If asked, say: "Our team will provide a custom quote. Please email {CLIENT_EMAIL} to book a consultation."
+    2. NEVER ask for or store personal candidate data (like CVs or national insurance numbers). 
+    3. If the user wants to book a consultation, direct them to the website or email {CLIENT_EMAIL}.
+    4. Be warm, professional, and helpful. The bot is the GPS; the human is the driver.
     """
     
+    full_messages = [{"role": "system", "content": system_prompt}] + messages
+    
     try:
-        # 1. Configure Gemini with the secret key
-        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-        
-        # 2. Initialize the model (gemini-1.5-flash is fast, smart, and camp-budget friendly)
-        model = genai.GenerativeModel(
-            model_name="gemini-2.5-flash",
-            system_instruction=system_prompt
+        # Initialize OpenAI client using the secure Streamlit secret
+        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+        response = client.chat.completions.create(
+            model="gpt-4o-mini", # Fast, smart, and cost-effective
+            messages=full_messages,
+            temperature=0.5 # Keeps the bot professional and grounded
         )
-        
-        # 3. Format history for Gemini 
-        # Gemini strictly requires roles to be "user" or "model" (not "assistant")
-        # We pass all messages EXCEPT the last one as "history", and send the last one as the new prompt.
-        chat_history = []
-        for msg in messages[:-1]: 
-            role = "model" if msg["role"] == "assistant" else "user"
-            chat_history.append({"role": role, "parts": msg["content"]})
-        
-        # 4. Start the chat and send the latest user message
-        chat = model.start_chat(history=chat_history)
-        latest_user_prompt = messages[-1]["content"]
-        
-        response = chat.send_message(latest_user_prompt)
-        
-        return response.text
-        
+        return response.choices[0].message.content
     except Exception as e:
-        # TEMPORARY DEBUGGING: This will show the exact error on screen
-        return f"🚨 DEBUG ERROR: {str(e)}"
-
-
-
+        # Fallback message if the API fails
+        return f"I'm sorry, I'm experiencing a technical difficulty right now. Please contact our team directly at {CLIENT_EMAIL}."
 
 # ==========================================
 # 5. STREAMLIT FRONTEND (Day 6/10 Concepts)
@@ -127,7 +106,6 @@ if "messages" not in st.session_state:
 
 # Sidebar: Client Info & Call to Action
 with st.sidebar:
-    st.image("https://outsourcedevelopment.org/wp-content/uploads/2023/05/cropped-ODS-Logo.png", width=150) # Fallback if image fails
     st.title("Outsource Development Studio")
     st.markdown(f"**Location:** {CLIENT_LOCATION}")
     st.markdown(f"**Email:** {CLIENT_EMAIL}")
@@ -162,7 +140,7 @@ if prompt := st.chat_input("Ask about our services, UWI seminars, or recruitment
     # 2. Redact PII (Privacy)
     safe_prompt = redact_pii(prompt)
     
-    # 3. Add to UI and History
+    # 3. Add to UI and History (We show the user's original prompt, but send the safe one to AI)
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"): st.markdown(prompt)
 
@@ -170,8 +148,25 @@ if prompt := st.chat_input("Ask about our services, UWI seminars, or recruitment
     with st.chat_message("assistant"):
         with st.spinner("Consulting the Outsource Development knowledge base..."):
             web_context = get_website_context(CLIENT_WEBSITE)
-            # We pass the safe_prompt to the AI, but show the user their original text
-            response = generate_response(st.session_state.messages, web_context)
             
-    st.markdown(response)
-    st.session_state.messages.append({"role": "assistant", "content": response})
+            # Create a temporary message list with the redacted prompt for the AI
+            ai_messages = full_messages_for_ai = [{"role": "system", "content": f"You are the assistant for {CLIENT_NAME}."}] 
+            # Actually, let's just rebuild the messages list with the redacted last message for the API call
+            api_messages = [{"role": "system", "content": f"You are the official AI Assistant for {CLIENT_NAME}. {web_context} NEVER quote pricing or handle personal data."}]
+            for msg in st.session_state.messages[:-1]:
+                api_messages.append({"role": msg["role"], "content": msg["content"]})
+            api_messages.append({"role": "user", "content": safe_prompt})
+            
+            try:
+                client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=api_messages,
+                    temperature=0.5
+                )
+                response_text = response.choices[0].message.content
+            except Exception as e:
+                response_text = f"I'm sorry, I'm experiencing a technical difficulty. Please contact us at {CLIENT_EMAIL}."
+            
+    st.markdown(response_text)
+    st.session_state.messages.append({"role": "assistant", "content": response_text})
