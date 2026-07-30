@@ -89,7 +89,7 @@ def generate_response(messages, web_context):
         
         # 2. Initialize the model (gemini-1.5-flash is fast, smart, and camp-budget friendly)
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash-latest",
+            model_name="gemini-2.0-flash",
             system_instruction=system_prompt
         )
         
