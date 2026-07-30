@@ -14,27 +14,44 @@ CLIENT_EMAIL = "admin@outsourcejobsda.com"
 CLIENT_WEBSITE = "https://outsourcedevelopment.org"
 
 # ==========================================
-# 2. MULTI-COLOR THEME ENGINE
+# 2. MULTI-COLOR THEME ENGINE (Black, Grey, Red, White)
 # ==========================================
-# Extracted brand colors + professional alternatives for the toggle
 THEMES = [
     {
-        "name": "ODS Emerald (Default)",
-        "bg_primary": "#0f0f23", "bg_sidebar": "#0d1b2a", "bg_secondary": "#16213e",
-        "bg_tertiary": "#1a1a2e", "text_primary": "#e0e0e0", "text_secondary": "#a0aec0",
-        "accent_primary": "#10b981", "card_bg": "#16213e", "border_color": "#374151"
+        "name": "Dark Monochrome & Red (Default)",
+        "bg_primary": "#121212",       # Pure black/dark grey
+        "bg_sidebar": "#1a1a1a",       # Slightly lighter black for sidebar
+        "bg_secondary": "#242424",     # Input fields / headers
+        "bg_tertiary": "#2d2d2d",      # Subtle background elements
+        "text_primary": "#ffffff",     # Pure white text
+        "text_secondary": "#a3a3a3",   # Light grey text
+        "accent_primary": "#ef4444",   # Vibrant red for buttons/user bubbles
+        "card_bg": "#242424",          # Bot chat bubble background
+        "border_color": "#404040"      # Subtle grey borders
     },
     {
-        "name": "Caribbean Blue",
-        "bg_primary": "#0c1426", "bg_sidebar": "#0a1120", "bg_secondary": "#132238",
-        "bg_tertiary": "#1a2a44", "text_primary": "#f0f4f8", "text_secondary": "#94a3b8",
-        "accent_primary": "#0ea5e9", "card_bg": "#132238", "border_color": "#1e3a5f"
+        "name": "Light Monochrome & Red",
+        "bg_primary": "#ffffff",       # Pure white
+        "bg_sidebar": "#f4f4f5",       # Very light grey
+        "bg_secondary": "#e4e4e7",     # Input fields
+        "bg_tertiary": "#f4f4f5",      # Chat background
+        "text_primary": "#18181b",     # Near-black text
+        "text_secondary": "#52525b",   # Medium grey text
+        "accent_primary": "#dc2626",   # Deep red for buttons/user bubbles
+        "card_bg": "#ffffff",          # Bot chat bubble background
+        "border_color": "#d4d4d8"      # Light grey borders
     },
     {
-        "name": "Sunset Coral",
-        "bg_primary": "#1a1215", "bg_sidebar": "#21161a", "bg_secondary": "#2a1d22",
-        "bg_tertiary": "#33242a", "text_primary": "#f5f5f5", "text_secondary": "#b0b0b0",
-        "accent_primary": "#f97316", "card_bg": "#2a1d22", "border_color": "#4a353d"
+        "name": "Slate & Crimson",
+        "bg_primary": "#0f172a",       # Deep slate grey/black
+        "bg_sidebar": "#1e293b",       # Slate sidebar
+        "bg_secondary": "#334155",     # Slate secondary
+        "bg_tertiary": "#1e293b",      # Slate tertiary
+        "text_primary": "#f8fafc",     # Off-white text
+        "text_secondary": "#94a3b8",   # Slate grey text
+        "accent_primary": "#991b1b",   # Deep crimson red
+        "card_bg": "#334155",          # Slate bot bubble
+        "border_color": "#475569"      # Slate border
     }
 ]
 
@@ -44,7 +61,7 @@ if "theme_index" not in st.session_state:
 
 current_theme = THEMES[st.session_state.theme_index]
 
-# Inject Custom CSS to match the HTML template
+# Inject Custom CSS to match the HTML Template
 st.markdown(f"""
 <style>
     :root {{
@@ -69,6 +86,7 @@ st.markdown(f"""
         display: flex; align-items: center; justify-content: center; 
         color: white; font-weight: bold; font-size: 1.125rem; 
         background-color: var(--accent-primary); margin-right: 1rem;
+        border: 2px solid var(--text-primary);
     }}
     
     /* Chat Input Styling */
@@ -82,7 +100,7 @@ st.markdown(f"""
     }}
     .chat-bubble-user > div {{ 
         max-width: 80%; padding: 0.75rem 1rem; border-radius: 1rem 1rem 0.25rem 1rem; 
-        background-color: var(--accent-primary); color: white; font-size: 0.95rem; 
+        background-color: var(--accent-primary); color: white; font-size: 0.95rem; font-weight: 500;
     }}
     .chat-bubble-bot {{ 
         display: flex; justify-content: flex-start; margin-bottom: 1rem; 
@@ -176,11 +194,10 @@ if "messages" not in st.session_state:
 with st.sidebar:
     st.markdown(f"""
     <div style="display: flex; align-items: center; margin-bottom: 1.5rem;">
-        <!-- Replace 'ODS' with <img src='YOUR_LOGO_URL' width='56'> if you have the image file -->
         <div class="ods-badge">ODS</div>
         <div>
             <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text-primary);">Outsource Development Studio</h3>
-            <p style="margin: 0; font-size: 0.8rem; color: var(--accent-primary);">Online • Ready to help</p>
+            <p style="margin: 0; font-size: 0.8rem; color: var(--accent-primary); font-weight: 600;">Online • Ready to help</p>
         </div>
     </div>
     
