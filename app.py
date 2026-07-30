@@ -116,4 +116,48 @@ with st.sidebar:
     st.title("Outsource Development Studio")
     st.markdown(f"**Location:** {CLIENT_LOCATION}\n**Email:** {CLIENT_EMAIL}")
     st.divider()
-    st.markdown("### 📅 Book a Consult
+    st.markdown("### 📅 Book a Consultation")
+    st.markdown(f"Ready to grow your business? Email us at **{CLIENT_EMAIL}** to book a service appointment.")
+    st.link_button("Visit Our Website", CLIENT_WEBSITE)
+
+st.title(f"🤖 Welcome to {CLIENT_NAME}")
+st.caption("Your AI guide to BPO, Recruitment, Training, and Business Excellence in Dominica.")
+
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+if prompt := st.chat_input("Ask about our services, UWI seminars, or recruitment..."):
+    
+    # 1. Check Authority (Guardrail)
+    if not check_authority(prompt):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"): st.markdown(prompt)
+        
+        escalation_msg = f"For questions regarding pricing, contracts, or personal candidate files, our human team must assist you to ensure accuracy and privacy. Please reach out to **{CLIENT_EMAIL}**."
+        st.session_state.messages.append({"role": "assistant", "content": escalation_msg})
+        with st.chat_message("assistant"): st.markdown(escalation_msg)
+        st.stop()
+
+    # 2. Redact PII (Privacy)
+    safe_prompt = redact_pii(prompt)
+    
+    # 3. Add to UI and History
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"): st.markdown(prompt)
+
+    # 4. Generate AI Response
+    with st.chat_message("assistant"):
+        with st.spinner("Consulting the knowledge base..."):
+            web_context = get_website_context(CLIENT_WEBSITE)
+            
+            # Rebuild messages for API with redacted last prompt
+            api_messages = [{"role": "system", "content": f"You are the assistant for {CLIENT_NAME}. {web_context} NEVER quote pricing or handle personal data."}]
+            for msg in st.session_state.messages[:-1]:
+                api_messages.append({"role": msg["role"], "content": msg["content"]})
+            api_messages.append({"role": "user", "content": safe_prompt})
+            
+            response_text = generate_response(api_messages, web_context)
+            
+    st.markdown(response_text)
+    st.session_state.messages.append({"role": "assistant", "content": response_text})
