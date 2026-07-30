@@ -5,159 +5,245 @@ from bs4 import BeautifulSoup
 import re
 
 # ==========================================
-# 1. CLIENT CONFIGURATION (Day 1-4 Concepts)
+# 1. CLIENT CONFIGURATION (From Client Brief)
 # ==========================================
 CLIENT_NAME = "Outsource Development Studio Inc."
 CLIENT_LOCATION = "Roseau, Dominica"
+CLIENT_PHONE = "+1 (767) 225-8606"
 CLIENT_EMAIL = "admin@outsourcejobsda.com"
 CLIENT_WEBSITE = "https://outsourcedevelopment.org"
 
 # ==========================================
-# 2. WEBSITE INTEGRATION (Day 11/12 Concepts)
+# 2. MULTI-COLOR THEME ENGINE
 # ==========================================
-def get_website_context(url):
-    """
-    BACKEND EXPLANATION: This function acts as the bot's 'research assistant'. 
-    We use 'requests' to download the client's website, and 'BeautifulSoup' to 
-    strip away the HTML code, leaving only the readable text. We feed this text 
-    to the AI so it has up-to-date facts about services and UWI partnerships.
-    """
-    try:
-        response = requests.get(url, timeout=5)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        text = soup.get_text(separator=' ', strip=True)
-        return text[:2500] # Limit to 2500 chars to save AI memory (tokens)
-    except Exception:
-        return "Outsource Development Studio offers BPO, recruitment, corporate training (UWI Cave Hill partnership), and logistics in Dominica."
+# Extracted brand colors + professional alternatives for the toggle
+THEMES = [
+    {
+        "name": "ODS Emerald (Default)",
+        "bg_primary": "#0f0f23", "bg_sidebar": "#0d1b2a", "bg_secondary": "#16213e",
+        "bg_tertiary": "#1a1a2e", "text_primary": "#e0e0e0", "text_secondary": "#a0aec0",
+        "accent_primary": "#10b981", "card_bg": "#16213e", "border_color": "#374151"
+    },
+    {
+        "name": "Caribbean Blue",
+        "bg_primary": "#0c1426", "bg_sidebar": "#0a1120", "bg_secondary": "#132238",
+        "bg_tertiary": "#1a2a44", "text_primary": "#f0f4f8", "text_secondary": "#94a3b8",
+        "accent_primary": "#0ea5e9", "card_bg": "#132238", "border_color": "#1e3a5f"
+    },
+    {
+        "name": "Sunset Coral",
+        "bg_primary": "#1a1215", "bg_sidebar": "#21161a", "bg_secondary": "#2a1d22",
+        "bg_tertiary": "#33242a", "text_primary": "#f5f5f5", "text_secondary": "#b0b0b0",
+        "accent_primary": "#f97316", "card_bg": "#2a1d22", "border_color": "#4a353d"
+    }
+]
+
+# Initialize theme in session state
+if "theme_index" not in st.session_state:
+    st.session_state.theme_index = 0
+
+current_theme = THEMES[st.session_state.theme_index]
+
+# Inject Custom CSS to match the HTML template
+st.markdown(f"""
+<style>
+    :root {{
+        --bg-primary: {current_theme['bg_primary']};
+        --bg-sidebar: {current_theme['bg_sidebar']};
+        --bg-secondary: {current_theme['bg_secondary']};
+        --bg-tertiary: {current_theme['bg_tertiary']};
+        --text-primary: {current_theme['text_primary']};
+        --text-secondary: {current_theme['text_secondary']};
+        --accent-primary: {current_theme['accent_primary']};
+        --card-bg: {current_theme['card_bg']};
+        --border-color: {current_theme['border_color']};
+    }}
+    /* Global Overrides */
+    .stApp {{ background-color: var(--bg-primary) !important; color: var(--text-primary) !important; }}
+    section[data-testid="stSidebar"] {{ background-color: var(--bg-sidebar) !important; border-right: 1px solid var(--border-color); }}
+    section[data-testid="stSidebar"] * {{ color: var(--text-primary) !important; }}
+    
+    /* Custom ODS Logo Badge */
+    .ods-badge {{ 
+        width: 56px; height: 56px; border-radius: 9999px; 
+        display: flex; align-items: center; justify-content: center; 
+        color: white; font-weight: bold; font-size: 1.125rem; 
+        background-color: var(--accent-primary); margin-right: 1rem;
+    }}
+    
+    /* Chat Input Styling */
+    .stChatInput {{ background-color: var(--bg-secondary) !important; border: 1px solid var(--border-color) !important; }}
+    .stChatInput input {{ color: var(--text-primary) !important; }}
+    
+    /* Custom Chat Bubbles (Matching HTML Template) */
+    .chat-bubble-user {{ 
+        display: flex; justify-content: flex-end; margin-bottom: 1rem; 
+        animation: fadeIn 0.3s ease-out; 
+    }}
+    .chat-bubble-user > div {{ 
+        max-width: 80%; padding: 0.75rem 1rem; border-radius: 1rem 1rem 0.25rem 1rem; 
+        background-color: var(--accent-primary); color: white; font-size: 0.95rem; 
+    }}
+    .chat-bubble-bot {{ 
+        display: flex; justify-content: flex-start; margin-bottom: 1rem; 
+        animation: fadeIn 0.3s ease-out; 
+    }}
+    .chat-bubble-bot > div {{ 
+        max-width: 80%; padding: 0.75rem 1rem; border-radius: 1rem 1rem 1rem 0.25rem; 
+        background-color: var(--card-bg); color: var(--text-primary); font-size: 0.95rem; 
+        border: 1px solid var(--border-color);
+    }}
+    
+    /* Buttons & Links */
+    .stButton>button {{ 
+        background-color: var(--accent-primary) !important; color: white !important; 
+        border: none !important; border-radius: 0.5rem !important; font-weight: 500 !important; width: 100%;
+    }}
+    .stButton>button:hover {{ opacity: 0.9 !important; }}
+    a.custom-link {{ color: var(--accent-primary) !important; text-decoration: none; font-weight: 500; }}
+    a.custom-link:hover {{ text-decoration: underline; }}
+    
+    /* Hide default Streamlit branding for a clean, custom-app look */
+    #MainMenu {{ visibility: hidden; }}
+    footer {{ visibility: hidden; }}
+    .viewerBadge_container__1QSob {{ display: none; }}
+    
+    @keyframes fadeIn {{ from {{ opacity: 0; transform: translateY(8px); }} to {{ opacity: 1; transform: translateY(0); }} }}
+</style>
+""", unsafe_allow_html=True)
 
 # ==========================================
-# 3. PRIVACY & SECURITY GUARDRAILS (Day 9/11 Concepts)
+# 3. PRIVACY & SECURITY GUARDRAILS (Day 9/11)
 # ==========================================
 def redact_pii(text):
-    """
-    BACKEND EXPLANATION: Outsource Development handles recruitment and personal data. 
-    We CANNOT send personal info to the AI. This function acts as a 'security guard', 
-    using Regular Expressions (regex) to find emails, phone numbers, and 9-digit NINs, 
-    replacing them with [REDACTED] BEFORE the message is sent to the AI.
-    """
     text = re.sub(r'\b[\w\.-]+@[\w\.-]+\.\w+\b', '[REDACTED:EMAIL]', text)
     text = re.sub(r'\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b', '[REDACTED:PHONE]', text)
-    text = re.sub(r'\b\d{9}\b', '[REDACTED:NIN]', text) # 9-digit National Insurance
+    text = re.sub(r'\b\d{9}\b', '[REDACTED:NIN]', text)
     return text
 
 def check_authority(user_message):
-    """
-    BACKEND EXPLANATION: This is 'Axis 1: Authority'. The client brief strictly states 
-    the bot must NEVER quote pricing, contract terms, or handle sensitive candidate data. 
-    If the user asks for these, we block the AI and escalate to a human.
-    """
     triggers = ["price", "cost", "fee", "salary", "contract terms", "my personal file", "my cv", "my application status", "am i eligible"]
     if any(word in user_message.lower() for word in triggers):
-        return False # Trigger human escalation
+        return False
     return True
 
 # ==========================================
-# 4. PROMPT ENGINEERING & AI CALL (Day 7/8 Concepts - TCRDEI)
+# 4. AI & MOCK FALLBACK (Day 7/8 + Demo Life Raft)
 # ==========================================
 def generate_response(messages, web_context):
-    """
-    BACKEND EXPLANATION: This is the 'Brain'. We use the TCRDEI method to build a 
-    System Prompt. We inject the client's mission, the scraped website data, and 
-    strict guardrails. Then we send the whole chat history to OpenAI's API.
-    """
     system_prompt = f"""
     [TASK] You are the official AI Assistant for {CLIENT_NAME}, a people-centered consultancy in {CLIENT_LOCATION}.
     [CONTEXT] You help private/public sectors, small businesses, and entrepreneurs with BPO, recruitment, corporate training (UWI Cave Hill partnership), and logistics. 
     Website context: {web_context}
-    [RULES/GUARDRAILS] 
-    1. NEVER quote pricing, fees, or contract terms. Say: "Our team will provide a custom quote. Please email {CLIENT_EMAIL} to book a consultation."
-    2. NEVER ask for or store personal candidate data (like CVs or national insurance numbers). 
+    [RULES] 
+    1. NEVER quote pricing, fees, or contract terms. Say: "Our team will provide a custom quote. Please email {CLIENT_EMAIL}."
+    2. NEVER ask for or store personal candidate data. 
     3. Be warm, professional, and helpful. The bot is the GPS; the human is the driver.
     """
     
     full_messages = [{"role": "system", "content": system_prompt}] + messages
     
     try:
-        # Initialize OpenAI client using the secure Streamlit secret
         client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=full_messages,
-            temperature=0.5
+            model="gpt-4o-mini", messages=full_messages, temperature=0.5
         )
         return response.choices[0].message.content
-        
     except Exception as e:
-        # 🚨 DEMO DAY LIFE RAFT: If the API fails (e.g., insufficient_quota), 
-        # we gracefully degrade to perfect, pre-written mock responses to guarantee the demo succeeds.
+        # DEMO DAY LIFE RAFT: Graceful degradation if API quota is exceeded
         error_msg = str(e).lower()
         last_user_msg = messages[-1]["content"].lower()
         
         if "insufficient_quota" in error_msg or "429" in error_msg:
-            # Mock responses based on camp learning outcomes
             if any(word in last_user_msg for word in ["service", "offer", "do", "bpo", "training", "uwi"]):
                 return "Outsource Development Studio offers Business Process Outsourcing (BPO), recruitment and talent matching, corporate training (including our quarterly seminars with UWI Cave Hill), logistics, and strategic business development. How can I direct you today?"
             elif any(word in last_user_msg for word in ["book", "appointment", "contact", "email"]):
-                return f"I would be happy to help you get started. Please email {CLIENT_EMAIL} with your preferred dates, or click the 'Visit Our Website' button in the sidebar to book a service appointment."
+                return f"I would be happy to help you get started. Please email {CLIENT_EMAIL} with your preferred dates, or click the 'Visit Website' button in the sidebar."
             else:
                 return f"Thank you for your inquiry! As the AI assistant for {CLIENT_NAME}, I can help guide you to our BPO, recruitment, or training services. For specific consulting engagements, our human team will provide the best support. Please reach out to {CLIENT_EMAIL}."
         else:
             return f"I'm experiencing a technical difficulty. Please contact our team at {CLIENT_EMAIL}."
 
 # ==========================================
-# 5. STREAMLIT FRONTEND (Day 6/10 Concepts)
+# 5. STREAMLIT FRONTEND (Custom HTML/CSS UI)
 # ==========================================
 st.set_page_config(page_title=f"{CLIENT_NAME} Assistant", page_icon="🇩🇲", layout="wide")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# --- SIDEBAR (Matches HTML Template) ---
 with st.sidebar:
-    st.title("Outsource Development Studio")
-    st.markdown(f"**Location:** {CLIENT_LOCATION}\n**Email:** {CLIENT_EMAIL}")
-    st.divider()
-    st.markdown("### 📅 Book a Consultation")
-    st.markdown(f"Ready to grow your business? Email us at **{CLIENT_EMAIL}** to book a service appointment.")
-    st.link_button("Visit Our Website", CLIENT_WEBSITE)
-
-st.title(f"🤖 Welcome to {CLIENT_NAME}")
-st.caption("Your AI guide to BPO, Recruitment, Training, and Business Excellence in Dominica.")
-
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-if prompt := st.chat_input("Ask about our services, UWI seminars, or recruitment..."):
+    st.markdown(f"""
+    <div style="display: flex; align-items: center; margin-bottom: 1.5rem;">
+        <!-- Replace 'ODS' with <img src='YOUR_LOGO_URL' width='56'> if you have the image file -->
+        <div class="ods-badge">ODS</div>
+        <div>
+            <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text-primary);">Outsource Development Studio</h3>
+            <p style="margin: 0; font-size: 0.8rem; color: var(--accent-primary);">Online • Ready to help</p>
+        </div>
+    </div>
     
+    <div style="margin-bottom: 1.5rem; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6;">
+        <p style="margin: 0 0 0.5rem 0;">📍 {CLIENT_LOCATION}</p>
+        <p style="margin: 0 0 0.5rem 0;">📞 {CLIENT_PHONE}</p>
+        <p style="margin: 0 0 1rem 0;">✉️ {CLIENT_EMAIL}</p>
+    </div>
+
+    <div style="border-top: 1px solid var(--border-color); padding-top: 1rem;">
+        <p style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">📅 Book a Consultation</p>
+        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1rem;">Ready to grow your business? Reach out to our team directly.</p>
+        <a href="mailto:{CLIENT_EMAIL}?subject=Consultation%20Request" target="_blank" style="display: block; text-align: center; padding: 0.6rem; background-color: var(--accent-primary); color: white; text-decoration: none; border-radius: 0.5rem; font-weight: 500; font-size: 0.9rem; margin-bottom: 0.5rem;">Send Email</a>
+        <a href="{CLIENT_WEBSITE}" target="_blank" style="display: block; text-align: center; padding: 0.6rem; background-color: var(--bg-secondary); color: var(--text-primary); text-decoration: none; border-radius: 0.5rem; font-weight: 500; font-size: 0.9rem; border: 1px solid var(--border-color);">Visit Website</a>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.divider()
+    
+    # Multi-Color Theme Toggle
+    st.markdown("<p style='font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem;'>🎨 App Theme</p>", unsafe_allow_html=True)
+    if st.button("Cycle Colors 🔄"):
+        st.session_state.theme_index = (st.session_state.theme_index + 1) % len(THEMES)
+        st.rerun()
+    
+    st.markdown(f"<p style='font-size: 0.8rem; color: var(--text-secondary); text-align: center; margin-top: 0.5rem;'>Current: <b>{current_theme['name']}</b></p>", unsafe_allow_html=True)
+
+# --- MAIN CHAT AREA ---
+st.markdown(f"<h2 style='color: var(--text-primary); margin-bottom: 0.5rem;'>🤖 Welcome to {CLIENT_NAME}</h2>", unsafe_allow_html=True)
+st.markdown(f"<p style='color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.95rem;'>Your AI guide to BPO, Recruitment, Training, and Business Excellence in Dominica.</p>", unsafe_allow_html=True)
+
+# Render Chat History with Custom HTML Bubbles
+for message in st.session_state.messages:
+    if message["role"] == "user":
+        st.markdown(f'<div class="chat-bubble-user"><div>{message["content"]}</div></div>', unsafe_allow_html=True)
+    else:
+        st.markdown(f'<div class="chat-bubble-bot"><div>{message["content"]}</div></div>', unsafe_allow_html=True)
+
+# Chat Input Logic
+if prompt := st.chat_input("Ask about our services, UWI seminars, or recruitment..."):
     # 1. Check Authority (Guardrail)
     if not check_authority(prompt):
         st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"): st.markdown(prompt)
-        
         escalation_msg = f"For questions regarding pricing, contracts, or personal candidate files, our human team must assist you to ensure accuracy and privacy. Please reach out to **{CLIENT_EMAIL}**."
         st.session_state.messages.append({"role": "assistant", "content": escalation_msg})
-        with st.chat_message("assistant"): st.markdown(escalation_msg)
-        st.stop()
+        st.rerun()
 
     # 2. Redact PII (Privacy)
     safe_prompt = redact_pii(prompt)
-    
-    # 3. Add to UI and History
     st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"): st.markdown(prompt)
-
-    # 4. Generate AI Response
-    with st.chat_message("assistant"):
-        with st.spinner("Consulting the knowledge base..."):
-            web_context = get_website_context(CLIENT_WEBSITE)
-            
-            # Rebuild messages for API with redacted last prompt
-            api_messages = [{"role": "system", "content": f"You are the assistant for {CLIENT_NAME}. {web_context} NEVER quote pricing or handle personal data."}]
-            for msg in st.session_state.messages[:-1]:
-                api_messages.append({"role": msg["role"], "content": msg["content"]})
-            api_messages.append({"role": "user", "content": safe_prompt})
-            
-            response_text = generate_response(api_messages, web_context)
-            
-    st.markdown(response_text)
+    
+    # 3. Generate AI Response
+    with st.spinner("Consulting the knowledge base..."):
+        # Mock web context for the demo (prevents scraping errors during presentation)
+        web_context = "Outsource Development Studio offers BPO, recruitment, corporate training (UWI Cave Hill partnership), and logistics in Dominica."
+        
+        # Rebuild messages for API with redacted last prompt
+        api_messages = [{"role": "system", "content": f"You are the assistant for {CLIENT_NAME}. {web_context} NEVER quote pricing or handle personal data."}]
+        for msg in st.session_state.messages[:-1]:
+            api_messages.append({"role": msg["role"], "content": msg["content"]})
+        api_messages.append({"role": "user", "content": safe_prompt})
+        
+        response_text = generate_response(api_messages, web_context)
+        
     st.session_state.messages.append({"role": "assistant", "content": response_text})
+    st.rerun()
