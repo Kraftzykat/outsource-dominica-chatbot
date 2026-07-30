@@ -1,5 +1,4 @@
 streamlit
-openai
-google-generativeai
-huggingface-hub
-python-dotenv
+openai>=1.0.0
+requests
+beautifulsoup4
