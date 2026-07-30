@@ -82,16 +82,16 @@ def generate_response(messages, web_context):
     
     full_messages = [{"role": "system", "content": system_prompt}] + messages
     
-                try:
-                client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+    try:
+        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
                 response = client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=api_messages,
                     temperature=0.5
-                )
+        )
                 response_text = response.choices[0].message.content
                 
-            except Exception as e:
+        except Exception as e:
                 # TEMPORARY DEBUG: This will print the EXACT error on your screen
                 response_text = f"🚨 DEBUG ERROR: {str(e)}"
 # ==========================================
