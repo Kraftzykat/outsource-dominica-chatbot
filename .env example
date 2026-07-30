@@ -1,0 +1,6 @@
+# Copy this file, rename to .env, add your REAL API keys
+# NEVER upload .env to GitHub!
+
+OPENAI_API_KEY=sk-your-openai-key-here
+GOOGLE_API_KEY=AIza-your-google-key-here
+HF_API_KEY=hf-your-huggingface-key-here
