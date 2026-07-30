@@ -64,39 +64,36 @@ def check_authority(user_message):
 # 4. PROMPT ENGINEERING & AI CALL (Day 7/8 Concepts)
 # ==========================================
 def generate_response(messages, web_context):
-    """
-    BACKEND EXPLANATION: This is the 'Brain'. We use the TCRDEI method to build a 
-    System Prompt. We inject the client's mission, the scraped website data, and 
-    strict guardrails. Then we send the whole chat history to OpenAI's API.
-    """
-    # TCRDEI System Prompt Construction
     system_prompt = f"""
-    [TASK] You are the official AI Assistant for {CLIENT_NAME}, a people-centered consultancy in {CLIENT_LOCATION}.
+    [TASK] You are the official AI Assistant for Outsource Development Studio Inc., a people-centered consultancy in Roseau, Dominica.
     [CONTEXT] You help private/public sectors, small businesses, and entrepreneurs with BPO, recruitment, corporate training (UWI Cave Hill partnership), and logistics. 
     Here is information directly from their website to help you answer accurately:
     ---
     {web_context}
     ---
     [RULES/GUARDRAILS] 
-    1. NEVER quote pricing, fees, or contract terms. If asked, say: "Our team will provide a custom quote. Please email {CLIENT_EMAIL}."
-    2. NEVER ask for or store personal candidate data (like CVs or national insurance numbers). 
-    3. If the user wants to book a consultation, direct them to the website or email {CLIENT_EMAIL}.
-    4. Be warm, professional, and helpful. 
+    1. NEVER quote pricing, fees, or contract terms. If asked, say: "Our team will provide a custom quote. Please email admin@outsourcejobsda.com."
+    2. NEVER ask for or store personal candidate data. 
+    3. Be warm, professional, and helpful. 
     """
     
-    # Prepend system prompt to the message history
     full_messages = [{"role": "system", "content": system_prompt}] + messages
     
     try:
         client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
         response = client.chat.completions.create(
-            model="gpt-4o-mini", # Fast and cost-effective
+            model="gpt-4o-mini",
             messages=full_messages,
-            temperature=0.5 # Keeps the bot professional and grounded
+            temperature=0.5
         )
         return response.choices[0].message.content
+        
     except Exception as e:
-        return f"I'm sorry, I'm experiencing a technical difficulty. Please contact us at {CLIENT_EMAIL}."
+        # TEMPORARY DEBUGGING: This will show the exact error on screen
+        return f"🚨 DEBUG ERROR: {str(e)}"
+   
+    
+
 
 # ==========================================
 # 5. STREAMLIT FRONTEND (Day 6/10 Concepts)
