@@ -1,10 +1,9 @@
 # app.py - Final Chatbot for Outsource Development Studio Inc.
 import streamlit as st
-from openai import OpenAI
+import google.generativeai as genai  # <-- CHANGED: Gemini library
 import requests
 from bs4 import BeautifulSoup
 import re
-import time
 
 # ==========================================
 # 1. CLIENT CONFIGURATION (Day 1-4 Concepts)
@@ -59,11 +58,18 @@ def check_authority(user_message):
     if any(word in user_message.lower() for word in triggers):
         return False # Trigger human escalation
     return True
+# ... [KEEP YOUR CLIENT CONFIG, WEBSITE SCRAPER, AND PII/AUTHORITY GUARDRAILS EXACTLY AS THEY ARE] ...
 
 # ==========================================
-# 4. PROMPT ENGINEERING & AI CALL (Day 7/8 Concepts)
+# UPDATED: PROMPT ENGINEERING & GEMINI API CALL
 # ==========================================
 def generate_response(messages, web_context):
+    """
+    BACKEND EXPLANATION: This is the 'Brain'. We use the TCRDEI method to build a 
+    System Prompt. We inject the client's mission and website data. Then, we format 
+    the chat history to match Google Gemini's specific requirements and send it.
+    """
+    # TCRDEI System Prompt Construction
     system_prompt = f"""
     [TASK] You are the official AI Assistant for Outsource Development Studio Inc., a people-centered consultancy in Roseau, Dominica.
     [CONTEXT] You help private/public sectors, small businesses, and entrepreneurs with BPO, recruitment, corporate training (UWI Cave Hill partnership), and logistics. 
@@ -77,22 +83,37 @@ def generate_response(messages, web_context):
     3. Be warm, professional, and helpful. 
     """
     
-    full_messages = [{"role": "system", "content": system_prompt}] + messages
-    
     try:
-        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=full_messages,
-            temperature=0.5
+        # 1. Configure Gemini with the secret key
+        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+        
+        # 2. Initialize the model (gemini-1.5-flash is fast, smart, and camp-budget friendly)
+        model = genai.GenerativeModel(
+            model_name="gemini-1.5-flash",
+            system_instruction=system_prompt
         )
-        return response.choices[0].message.content
+        
+        # 3. Format history for Gemini 
+        # Gemini strictly requires roles to be "user" or "model" (not "assistant")
+        # We pass all messages EXCEPT the last one as "history", and send the last one as the new prompt.
+        chat_history = []
+        for msg in messages[:-1]: 
+            role = "model" if msg["role"] == "assistant" else "user"
+            chat_history.append({"role": role, "parts": msg["content"]})
+        
+        # 4. Start the chat and send the latest user message
+        chat = model.start_chat(history=chat_history)
+        latest_user_prompt = messages[-1]["content"]
+        
+        response = chat.send_message(latest_user_prompt)
+        
+        return response.text
         
     except Exception as e:
         # TEMPORARY DEBUGGING: This will show the exact error on screen
         return f"🚨 DEBUG ERROR: {str(e)}"
-   
-    
+
+
 
 
 # ==========================================
