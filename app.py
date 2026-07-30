@@ -89,11 +89,11 @@ def generate_response(messages, web_context):
                     messages=api_messages,
                     temperature=0.5
         )
-                response_text = response.choices[0].message.content
+        response_text = response.choices[0].message.content
                 
-        except Exception as e:
+    except Exception as e:
                 # TEMPORARY DEBUG: This will print the EXACT error on your screen
-                response_text = f"🚨 DEBUG ERROR: {str(e)}"
+        response_text = f"🚨 DEBUG ERROR: {str(e)}"
 # ==========================================
 # 5. STREAMLIT FRONTEND (Day 6/10 Concepts)
 # ==========================================
