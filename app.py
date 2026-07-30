@@ -82,19 +82,18 @@ def generate_response(messages, web_context):
     
     full_messages = [{"role": "system", "content": system_prompt}] + messages
     
-    try:
-        # Initialize OpenAI client using the secure Streamlit secret
-        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-        response = client.chat.completions.create(
-            model="gpt-4o-mini", # Fast, smart, and cost-effective
-            messages=full_messages,
-            temperature=0.5 # Keeps the bot professional and grounded
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        # Fallback message if the API fails
-        return f"I'm sorry, I'm experiencing a technical difficulty right now. Please contact our team directly at {CLIENT_EMAIL}."
-
+                try:
+                client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=api_messages,
+                    temperature=0.5
+                )
+                response_text = response.choices[0].message.content
+                
+            except Exception as e:
+                # TEMPORARY DEBUG: This will print the EXACT error on your screen
+                response_text = f"🚨 DEBUG ERROR: {str(e)}"
 # ==========================================
 # 5. STREAMLIT FRONTEND (Day 6/10 Concepts)
 # ==========================================
