@@ -168,16 +168,10 @@ def detect_register(msg):
 # If the kitchen is closed, on fire, or you don't have money (No API Keys), 
 # the bot uses the "Microwave" (Smart Mock) to give you a pre-made sandwich so you don't starve!
 
+
 def get_llm_client():
-    # Grab the keys safely (works locally AND on Render)
     groq_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
     openai_key = st.secrets.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
-
-    # 🩺 DIAGNOSTIC: show what the app actually sees (temporary!)
-    with st.sidebar:
-        st.caption("🔍 **API Debug**")
-        st.caption(f"Groq key found: {'✅ yes (' + groq_key[:8] + '...)' if groq_key else '❌ no'}")
-        st.caption(f"OpenAI key found: {'✅ yes' if openai_key else '❌ no'}")
 
     if groq_key:
         return OpenAI(api_key=groq_key, base_url="https://api.groq.com/openai/v1"), "llama-3.1-8b-instant"
