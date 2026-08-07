@@ -6,7 +6,25 @@ import streamlit as st      # Streamlit is the magic tool that turns Python code
 from openai import OpenAI   # This is the "phone" we use to call the AI brain (OpenAI or Groq).
 import re                   # "Regular Expressions" - a search tool to find hidden patterns (like emails).
 import time                 # Just for counting seconds if we need the bot to pause.
+# ==========================================
+# 🩺 DIAGNOSTIC PANEL (temporary — remove before demo!)
+# ==========================================
+import os
 
+_groq_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
+_openai_key = st.secrets.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
+
+with st.sidebar:
+    st.error("🔍 **API DEBUG PANEL**")
+    if _groq_key:
+        st.success(f"✅ Groq key detected: `{_groq_key[:12]}...`")
+    else:
+        st.warning("❌ No Groq key found")
+    if _openai_key:
+        st.success(f"✅ OpenAI key detected: `{_openai_key[:12]}...`")
+    else:
+        st.info("ℹ️ No OpenAI key (that's fine)")
+    st.caption("If you see ❌ above, Render isn't passing the env var.")
 # ==========================================
 # 🪪 1. THE BOT'S ID CARD (Client Info)
 # ==========================================
