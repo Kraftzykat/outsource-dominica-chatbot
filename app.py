@@ -151,14 +151,21 @@ def detect_register(msg):
 # the bot uses the "Microwave" (Smart Mock) to give you a pre-made sandwich so you don't starve!
 
 def get_llm_client():
-    """Tries to connect to the fancy AI kitchen."""
-    # 1. Try Groq (It's free and super fast! Great for students)
-    if "GROQ_API_KEY" in st.secrets:
-        return OpenAI(api_key=st.secrets["GROQ_API_KEY"], base_url="https://api.groq.com/openai/v1"), "llama3-8b-8192"
-    # 2. Try OpenAI (The standard brain)
-    if "OPENAI_API_KEY" in st.secrets:
-        return OpenAI(api_key=st.secrets["OPENAI_API_KEY"]), "gpt-4o-mini"
-    # 3. No keys? Kitchen is closed.
+    """Tries to connect to the fancy AI kitchen (Checks Streamlit Secrets OR Render Environment Variables)."""
+    
+    # 1. Grab the keys safely (Works on local computer AND Render)
+    groq_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
+    openai_key = st.secrets.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
+
+    # 2. Try Groq (Free and super fast!)
+    if groq_key:
+        return OpenAI(api_key=groq_key, base_url="https://api.groq.com/openai/v1"), "llama3-8b-8192"
+        
+    # 3. Try OpenAI (The standard brain)
+    if openai_key:
+        return OpenAI(api_key=openai_key), "gpt-4o-mini"
+        
+    # 4. No keys? Kitchen is closed. Use the Microwave (Fallback).
     return None, None
 
 def build_system_prompt(register="warm"):
